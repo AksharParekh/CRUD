@@ -32,13 +32,33 @@ app.use(cors({ origin: ALLOWED_ORIGINS }));
 console.log("Allowed CORS origins:", ALLOWED_ORIGINS);
 if (process.env.FRONTEND_URL) console.log("FRONTEND_URL provided:", process.env.FRONTEND_URL);
 
-mongoose
-  .connect(MONGO_URI)
-  .then(() => console.log("MongoDB connected"))
-  .catch((err) => {
+const RETRY_MS = 5000;
+
+const connectMongoWithRetry = async () => {
+  try {
+    await mongoose.connect(MONGO_URI);
+    console.log("MongoDB connected");
+  } catch (err) {
     console.error("MongoDB connection error:", err.message);
-    process.exit(1);
-  });
+    console.log(`Retrying MongoDB connection in ${RETRY_MS / 1000}s...`);
+    setTimeout(connectMongoWithRetry, RETRY_MS);
+  }
+};
+
+connectMongoWithRetry();
+
+mongoose.connection.on("disconnected", () => {
+  console.warn("MongoDB disconnected");
+});
+
+const isDbReady = () => mongoose.connection.readyState === 1;
+
+const requireDb = (_, res, next) => {
+  if (!isDbReady()) {
+    return res.status(503).json({ message: "Database unavailable. Please try again." });
+  }
+  return next();
+};
 
 const postSchema = new mongoose.Schema(
   {
@@ -71,14 +91,15 @@ const parsePayload = (body) => {
 };
 
 app.get("/", (_, res) => {
-  res.json({ ok: true, service: "blog-api" });
+  res.json({ ok: true, service: "blog-api", dbReady: isDbReady() });
 });
 
 app.get("/health", (_, res) => {
-  res.json({ ok: true, service: "blog-api" });
+  const dbReady = isDbReady();
+  res.status(dbReady ? 200 : 503).json({ ok: dbReady, service: "blog-api", dbReady });
 });
 
-app.post("/posts", async (req, res) => {
+app.post("/posts", requireDb, async (req, res) => {
   try {
     const parsed = parsePayload(req.body);
     if (parsed.error) {
@@ -93,7 +114,7 @@ app.post("/posts", async (req, res) => {
   }
 });
 
-app.get("/posts", async (_, res) => {
+app.get("/posts", requireDb, async (_, res) => {
   try {
     const posts = await Post.find().sort({ createdAt: -1 });
     return res.json(posts);
@@ -102,7 +123,7 @@ app.get("/posts", async (_, res) => {
   }
 });
 
-app.put("/posts/:id", async (req, res) => {
+app.put("/posts/:id", requireDb, async (req, res) => {
   try {
     const parsed = parsePayload(req.body);
     if (parsed.error) {
@@ -124,7 +145,7 @@ app.put("/posts/:id", async (req, res) => {
   }
 });
 
-app.delete("/posts/:id", async (req, res) => {
+app.delete("/posts/:id", requireDb, async (req, res) => {
   try {
     const deleted = await Post.findByIdAndDelete(req.params.id);
     if (!deleted) {
