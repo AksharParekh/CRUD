@@ -70,6 +70,10 @@ const parsePayload = (body) => {
   return { title, content };
 };
 
+app.get("/", (_, res) => {
+  res.json({ ok: true, service: "blog-api" });
+});
+
 app.get("/health", (_, res) => {
   res.json({ ok: true, service: "blog-api" });
 });
