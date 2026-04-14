@@ -7,9 +7,15 @@ const { Server } = require("socket.io");
 const app = express();
 const server = http.createServer(app);
 const defaultOrigins = ["http://localhost:3000", "http://localhost:3001"];
-const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
+let ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(",").map((s) => s.trim()).filter(Boolean)
-  : defaultOrigins;
+  : defaultOrigins.slice();
+
+if (process.env.FRONTEND_URL) {
+  ALLOWED_ORIGINS.push(process.env.FRONTEND_URL);
+}
+
+ALLOWED_ORIGINS = Array.from(new Set(ALLOWED_ORIGINS));
 const io = new Server(server, {
   cors: {
     origin: ALLOWED_ORIGINS,
@@ -24,6 +30,7 @@ app.use(express.json());
 app.use(cors({ origin: ALLOWED_ORIGINS }));
 
 console.log("Allowed CORS origins:", ALLOWED_ORIGINS);
+if (process.env.FRONTEND_URL) console.log("FRONTEND_URL provided:", process.env.FRONTEND_URL);
 
 mongoose
   .connect(MONGO_URI)
