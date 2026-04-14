@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #000000;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* Force light theme colors regardless of OS preference */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #ffffff;
+    --foreground: #000000;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Stronger rules to override other resets (useful during dev/hot-reload) */
+html, body {
+  background: var(--background) !important;
+  color: var(--foreground) !important;
+  height: 100%;
+}
+
+/* Ensure the top nav uses the light theme */
+nav {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border-bottom: 1px solid #eee !important;
+}
+
+/* Anchor defaults to remove browser default purple/underline */
+a {
+  color: inherit !important;
+  text-decoration: none !important;
+}
+
+/* Button-like hyperlink for navigation */
+.btn-link,
+.btn-link:link,
+.btn-link:visited,
+.btn-link:focus {
+  display: inline-block;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: transparent;
+  color: #000000 !important;
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition: all 160ms ease;
+}
+.btn-link:hover {
+  background: #f2f2f2;
+  border-color: #dddddd;
+  text-decoration: none;
+}
+.btn-link:active {
+  transform: translateY(1px);
+}

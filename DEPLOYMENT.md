@@ -1,65 +1,53 @@
-Frontend (Vercel)
+Frontend on Vercel + Backend on Render
 
-- Option A: Use Vercel dashboard
-  1. Sign in to https://vercel.com and import the repository.
-  2. When configuring the project, set the "Root Directory" to `frontend`.
-  3. Framework preset: Next.js (should be detected). Set build command: `npm run build` and output: default.
-  4. Add any environment variables (if your frontend needs them).
-  5. Deploy.
+1) Push clean repository content first
 
-- Option B: Use Vercel CLI (quick deploy from local)
+- Make sure your repository includes source files from `frontend/` and `backend/`.
+- Do not commit generated folders like `node_modules` or `.next`.
 
-  1. Install Vercel CLI:
+2) Deploy backend on Render
 
-```bash
-npm i -g vercel
-```
+1. Sign in to https://render.com.
+2. Create `New` -> `Web Service`.
+3. Select your GitHub repo.
+4. Set `Root Directory` to `backend`.
+5. Runtime: `Node`.
+6. Build command: `npm install`.
+7. Start command: `npm start`.
+8. Add environment variables:
+  - `MONGO_URI` = your MongoDB connection string.
+  - `FRONTEND_URL` = your Vercel app URL (set this after frontend deploy).
+  - Optional: `ALLOWED_ORIGINS` = comma-separated list of allowed origins.
+9. Deploy and copy the backend URL, for example `https://your-api.onrender.com`.
 
-  2. From the repo root run:
+3) Deploy frontend on Vercel
 
-```bash
-cd frontend
-vercel --prod
-```
+1. Sign in to https://vercel.com.
+2. Click `New Project` and import this GitHub repo.
+3. Set `Root Directory` to `frontend`.
+4. Confirm framework is `Next.js`.
+5. Add environment variables:
+  - `NEXT_PUBLIC_API_URL` = your Render backend URL.
+  - Optional: `NEXT_PUBLIC_SOCKET_URL` = your Render backend URL.
+6. Deploy.
 
-Notes:
-- I added `frontend/vercel.json` so Vercel can detect the Next.js build.
-- If you use the dashboard, setting the project root to `frontend` is sufficient.
+4) Connect both apps
 
+1. Copy the Vercel frontend URL.
+2. In Render service env vars, set/update `FRONTEND_URL` with the Vercel URL.
+3. If you use `ALLOWED_ORIGINS`, include the Vercel URL there too.
+4. Redeploy Render service.
+5. Redeploy Vercel project if frontend env vars were added after first deploy.
 
-Backend (Render)
+5) Verify
 
-1. Sign in to https://render.com and create a new Web Service.
-2. Connect your repository and select the `backend` folder as the root.
-3. Build command: `npm install`
-4. Start command: `npm start` (already in `backend/package.json`)
-5. Environment variables to add on Render:
-   - `MONGO_URI` = your MongoDB connection string (required)
-   - `ALLOWED_ORIGINS` = comma-separated allowed origins for CORS (e.g. `https://your-frontend.vercel.app`)
-   - Any other secrets (e.g. API keys)
-
-Important details and tips
-
-- The backend now reads `ALLOWED_ORIGINS` from the environment (comma-separated). By default it allows `http://localhost:3000` and `http://localhost:3001`.
-- After Render deploys, copy the frontend URL (e.g. `https://your-app.onrender.com`) into `ALLOWED_ORIGINS` on Render, and add the backend URL into any frontend environment variables if the frontend calls the API.
-- For Socket.IO over CORS, ensure the origin(s) include the exact frontend hostname (including `https://`).
-- Test the health endpoint after deployment: `GET https://<backend-url>/health` should return `{ ok: true, service: "blog-api" }`.
+1. Open frontend URL and test Create, Read, Update, Delete.
+2. Verify backend health endpoint:
+  - `GET https://<your-render-url>/health`
+3. If real-time updates fail, verify `NEXT_PUBLIC_SOCKET_URL` and CORS env values.
 
 Troubleshooting
 
-- If CORS/socket connections are blocked, verify `ALLOWED_ORIGINS` value on Render and restart the service.
-- Check Render service logs for runtime errors and missing env vars.
-
-Commands to run locally for testing
-
-```bash
-# Frontend
-cd frontend
-npm install
-npm run dev
-
-# Backend
-cd backend
-npm install
-MONGO_URI="your-local-or-remote-mongo" node server.js
-```
+- If Vercel cannot see your frontend project files, confirm `frontend` is not a git submodule pointer and is committed as regular files.
+- If CORS errors happen, ensure `FRONTEND_URL` and/or `ALLOWED_ORIGINS` exactly match your Vercel domain (`https://...`).
+- Check Render logs for missing env vars or MongoDB connection errors.
