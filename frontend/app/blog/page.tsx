@@ -45,6 +45,11 @@ export default function BlogPage() {
   }, []);
 
   useEffect(() => {
+    if (!SOCKET_URL) {
+      setConnected(false);
+      return;
+    }
+
     const socket: Socket = io(SOCKET_URL, { transports: ["websocket"] });
 
     socket.on("connect", () => setConnected(true));
@@ -88,7 +93,7 @@ export default function BlogPage() {
     <main style={{ maxWidth: 920, margin: "0 auto", padding: 24 }}>
       <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 8 }}>Blog Feed</h1>
       <p style={{ marginBottom: 14, color: "#444" }}>
-        Real-time status: {connected ? "Connected" : "Disconnected"}
+        Real-time status: {SOCKET_URL ? (connected ? "Connected" : "Disconnected") : "Disabled"}
       </p>
 
       {lastEvent && (
